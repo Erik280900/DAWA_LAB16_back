@@ -10,8 +10,17 @@ const routes = require('./routes');
 const app = express();
 
 // CORS configurado (debe ir ANTES del rate limiter)
+// Allow a single origin or a comma-separated list in FRONTEND_URL env var.
+const rawFrontends = process.env.FRONTEND_URL || 'http://localhost:3000';
+const allowedOrigins = rawFrontends.split(',').map(s => s.trim()).filter(Boolean);
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: (origin, callback) => {
+    // Allow non-browser requests (e.g. server-to-server or curl)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1) return callback(null, true);
+    return callback(new Error('CORS policy: origin not allowed'));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
